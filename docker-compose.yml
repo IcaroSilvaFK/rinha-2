@@ -1,0 +1,70 @@
+version: "3.3"
+
+services:
+  db:
+    image: postgres:15
+    hostname: db
+    container_name: db
+    environment:
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_USER=admin
+      - POSTGRES_DB=rinha
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgresql.conf:/docker-entrypoint-initdb.d/postgresql.conf
+    deploy:
+      resources:
+        limits:
+          cpus: "0.13"
+          memory: "150MB"
+
+  backend_gg1:
+    container_name: backend_gg1
+    build: .
+    hostname: backend_gg1
+    depends_on:
+      - db
+    expose:
+      - "8080:8080"
+    restart: on-failure
+    deploy:
+      resources:
+        limits:
+          cpus: "0.6"
+          memory: "100MB"
+
+  backend_gg2:
+    container_name: backend_gg2
+    build: .
+    hostname: backend_gg1
+    depends_on:
+      - db
+    expose:
+      - "8080:8080"
+    restart: on-failure
+    deploy:
+      resources:
+        limits:
+          cpus: "0.6"
+          memory: "150MB"
+
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend_gg1
+      - backend_gg2
+    ports:
+      - "9999:9999"
+    restart: on-failure
+    deploy:
+      resources:
+        limits:
+          cpus: "0.17"
+          memory: "150MB"
+networks:
+  default:
+    driver: bridge
+    name: backend_gg
